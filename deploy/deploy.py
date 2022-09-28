@@ -26,7 +26,8 @@ class Deploy(ABC):
             f.writelines(workers)
 
     def connect_to_master(self, master):
-        self.client = paramiko.client.SSHClient(master)
+        self.client = paramiko.client.SSHClient()
+        self.client.connect(master)
 
     def start_system(self):
         self.client.exec_command(f'{self.executable_file_path}')
