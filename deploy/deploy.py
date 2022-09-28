@@ -27,6 +27,7 @@ class Deploy(ABC):
 
     def connect_to_master(self, master):
         self.client = paramiko.client.SSHClient()
+        self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self.client.connect(master)
 
     def start_system(self):
