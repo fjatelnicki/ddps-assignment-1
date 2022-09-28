@@ -39,9 +39,9 @@ class Deploy(ABC):
 class DeploySpark(Deploy):
     def __init__(self):
         super().__init__()
-        self.executable_file_path = '~/scratch/spark-3.3.0-bin-hadoop3/sbin/start-all.sh'
-        self.stop_file_path = '~/scratch/spark-3.3.0-bin-hadoop3/sbin/stop-all.sh'
-        self.workers_file_path = '~/scratch/spark-3.3.0-bin-hadoop3/sbin/workers'
+        self.executable_file_path = '/var/scratch/ddps2201/spark-3.3.0-bin-hadoop3/sbin/start-all.sh'
+        self.stop_file_path = '/var/scratch/ddps2201/spark-3.3.0-bin-hadoop3/sbin/stop-all.sh'
+        self.workers_file_path = '/var/scratch/ddps2201/spark-3.3.0-bin-hadoop3/sbin/workers'
 
 
 if __name__ == '__main__':
