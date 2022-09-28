@@ -2,7 +2,7 @@ import paramiko.client
 from abc import abstractmethod, ABC
 import os
 import subprocess
-
+import time
 
 class Deploy(ABC):
     def __init__(self):
@@ -11,8 +11,8 @@ class Deploy(ABC):
         self.stop_file_path = None
         self.client = None
 
-    def reserve_nodes(self, num_nodes, time):
-        subprocess.check_output(f'preserve -# {num_nodes} -t 00:{time}:00', shell=True)
+    def reserve_nodes(self, num_nodes, reservation_time):
+        subprocess.check_output(f'preserve -# {num_nodes} -t 00:{reservation_time}:00', shell=True)
         status = subprocess.check_output("preserve -llist | grep ddps2201", shell=True).decode("utf-8").split()
         while status[6] != 'R':
             time.wait(1)
