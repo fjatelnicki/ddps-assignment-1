@@ -6,10 +6,12 @@ import time
 
 class Deploy(ABC):
     def __init__(self):
-        self.workers_file_path = None
+        self.start_master_path = None
+        self.start_worker_path = None
         self.executable_file_path = None
         self.stop_file_path = None
-        self.client = None
+        self.master_client = None
+        self.workers_clients = []
 
     def reserve_nodes(self, num_nodes, reservation_time):
         subprocess.check_output(f'preserve -# {num_nodes} -t 00:{reservation_time}:00', shell=True)
@@ -21,29 +23,31 @@ class Deploy(ABC):
         node_list = status[8:]
         return node_list
 
-    def update_workers(self, workers):
-        with open(self.workers_file_path, 'w') as f:
-            f.writelines(workers)
-
     def connect_to_master(self, master):
-        self.client = paramiko.client.SSHClient()
-        self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self.client.connect(master)
+        self.master_client = paramiko.client.SSHClient()
+        self.master_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self.master_client.connect(master)
 
-    def start_system(self):
-        self.client.exec_command(f'{self.executable_file_path}')
+    def connect_to_workers(self, workers):
+        for worker in workers:
+            client = paramiko.client.SSHClient()
+            client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            client.connect(worker)
+            self.workers_clients.append(client)
 
-    def stop_system(self):
-        self.client.exec_command(f'{self.stop_file_path}')
-        self.client.close()
+    def start_system(self, master, workers):
+        self.master_client.exec_command(f'{self.start_master_path}')
+        for i in range(len(self.workers_clients)):
+            self.workers_clients[i].exec_command(f'{self.start_worker_path} spark://{master}.cluster.cm:7077')
 
 
 class DeploySpark(Deploy):
     def __init__(self):
         super().__init__()
-        self.executable_file_path = '/var/scratch/ddps2201/spark-3.3.0-bin-hadoop3/sbin/start-all.sh'
+        self.start_master_path = '/var/scratch/ddps2201/spark-3.3.0-bin-hadoop3/sbin/start-master.sh'
+        self.start_worker_path = '/var/scratch/ddps2201/spark-3.3.0-bin-hadoop3/sbin/start-worker.sh'
         self.stop_file_path = '/var/scratch/ddps2201/spark-3.3.0-bin-hadoop3/sbin/stop-all.sh'
-        self.workers_file_path = '/var/scratch/ddps2201/spark-3.3.0-bin-hadoop3/sbin/workers'
+        self.workers_file_path = '/var/scratch/ddps2201/spark-3.3.0-bin-hadoop3/conf/workers'
 
 
 if __name__ == '__main__':
@@ -51,10 +55,9 @@ if __name__ == '__main__':
     d = DeploySpark()
     nodes = d.reserve_nodes(2, 10)
     print(f'Reserved nodes {nodes}')
-    d.update_workers(nodes[1:])
-    print('Updates workers file')
     d.connect_to_master(nodes[0])
     print('Connected to master')
-    d.start_system()
+    d.connect_to_workers(nodes[1:])
+    d.start_system(nodes[0], nodes[1:])
     print('Started system')
 
