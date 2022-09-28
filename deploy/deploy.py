@@ -16,6 +16,7 @@ class Deploy(ABC):
         status = subprocess.check_output("preserve -llist | grep ddps2201", shell=True).decode("utf-8").split()
         while status[6] != 'R':
             time.sleep(1)
+            status = subprocess.check_output("preserve -llist | grep ddps2201", shell=True).decode("utf-8").split()
 
         node_list = status[8:]
         return node_list
