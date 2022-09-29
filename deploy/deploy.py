@@ -36,9 +36,13 @@ class Deploy(ABC):
             self.workers_clients.append(client)
 
     def start_system(self, master, workers):
-        self.master_client.exec_command(f'{self.start_master_path}')
+        stdin, stdout, stderr = self.master_client.exec_command(f'{self.start_master_path}', get_pty=True)
+        for line in iter(stdout.readline, ""):
+            print(line, end="")
         for i in range(len(self.workers_clients)):
-            self.workers_clients[i].exec_command(f'{self.start_worker_path} spark://{master}.cluster.cm:7077')
+            stdin, stdout, stderr = self.workers_clients[i].exec_command(f'{self.start_worker_path} spark://{master}:7077', get_pty=True)
+            for line in iter(stdout.readline, ""):
+                print(line, end="")
 
 
 class DeploySpark(Deploy):

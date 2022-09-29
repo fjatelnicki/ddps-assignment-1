@@ -2,6 +2,7 @@ import time
 import random
 from typing import List, Dict
 from multiprocessing import Process, Queue, Value
+import ctypes
 
 
 class Generator(Process):
@@ -14,14 +15,14 @@ class Generator(Process):
         self.rate = rate
         self.interval = 1 / rate
         self.num_events = num_events
-        self.done = Value('done', False)
+        self.done = Value(ctypes.c_bool, False)
         self.queue = Queue()
         self.purchase_probability = purchase_probability
 
     def run(self):
         last_time = time.time()
         for _ in range(self.num_events):
-            if random.random() > self.purchase_probability:
+            if random.random() < self.purchase_probability:
                 self.queue.put(self.generate_purchase())
             else:
                 self.queue.put(self.generate_ad())

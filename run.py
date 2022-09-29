@@ -1,6 +1,6 @@
 from benchmark.benchmark import Benchmark
-from driver.data_manager import DataManager
 from deploy.deploy import DeploySpark
+import os
 
 
 if __name__ == '__main__':
@@ -14,4 +14,7 @@ if __name__ == '__main__':
     d.start_system(nodes[0], nodes[1:])
     print('Started system')
 
-    d.master_client.exec_command('python ~/ddps-assignment-1/driver/data_manager.py')
+    os.system(f'ssh {nodes[0]} python ~/ddps-assignment-1/driver/data_manager.py &')
+    os.system(f'ssh {nodes[0]} python ~/ddps-assignment-1/benchmark/benchmark.py &')
+    
+    
