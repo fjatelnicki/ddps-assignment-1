@@ -14,4 +14,4 @@ if __name__ == '__main__':
     d.start_system(nodes[0], nodes[1:])
     print('Started system')
 
-    d.master_client.exec_command('python ~/dps/driver/data_manager.py')
+    d.master_client.exec_command('python ~/ddps-assignment-1/driver/data_manager.py')
