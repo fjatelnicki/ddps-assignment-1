@@ -1,6 +1,6 @@
 import math
 from multiprocessing import Queue, Process
-from generator import Generator
+from driver.generator import Generator
 from sut_source import SUTSource
 
 
