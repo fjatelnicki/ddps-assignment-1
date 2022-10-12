@@ -1,7 +1,7 @@
 import time
 import random
 from typing import List, Dict
-from multiprocessing import Process, Queue, Value
+from multiprocessing import Process, Queue, Value, Manager
 import ctypes
 
 
@@ -19,7 +19,7 @@ class Generator(Process):
         print(f'Rate: {self.rate}, interval {self.interval}', flush=True)
         self.num_events = num_events
         self.done = Value(ctypes.c_bool, False)
-        self.queue = Queue()
+        self.queue = Queue(maxsize=10000)
         self.purchase_probability = purchase_probability
 
     def run(self):
