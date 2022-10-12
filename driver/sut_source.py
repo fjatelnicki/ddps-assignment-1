@@ -1,4 +1,5 @@
 import socket
+import time
 from multiprocessing import Process
 
 
@@ -19,14 +20,25 @@ class SUTSource(Process):
             sock.listen(0)
             
             conn, _ = sock.accept()
+
+            start = time.time()
             print('Connected!', self.generator.queue.qsize(), self.generator.done.value, flush=True)
 
-            while self.generator.queue.qsize() > 0 and not self.generator.done.value:
+            i = 0
+            print(self.generator.queue.qsize(), self.generator.done.value)
+            while not self.generator.done.value or self.generator.queue.qsize() > 0:
                 # print('getting data', flush=True)
                 data = self.generator.queue.get()
                 # print(data, flush=True)
                 # print('Sending', flush=True)
                 conn.sendall((data + '\n').encode())
-            print('DONE!', flush=True)
+
+                if i % 1000 == 0:
+                    print(f'sent {i}, {self.generator.queue.qsize()}', flush=True)
+                i += 1
+
+            total_time = time.time() - start
+            actual_rate = self.generator.num_events / total_time
+            print(f'DONE! Observed rate: {actual_rate}', flush=True)
             conn.close()
             sock.close()

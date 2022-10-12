@@ -13,7 +13,10 @@ class Generator(Process):
         self.packs = {i: self.prices[i] for i in range(len(self.prices))}
         self.pack_ids = [pack_id for pack_id in self.packs.keys()]
         self.rate = rate
+
         self.interval = 1 / rate
+
+        print(f'Rate: {self.rate}, interval {self.interval}', flush=True)
         self.num_events = num_events
         self.done = Value(ctypes.c_bool, False)
         self.queue = Queue()
@@ -28,8 +31,10 @@ class Generator(Process):
                 self.queue.put(self.generate_ad())
 
             cur_time = time.time()
+            # print(cur_time - last_time, self.interval, flush=True)
             if cur_time - last_time < self.interval:
                 time.sleep(self.interval - (cur_time - last_time))
+            last_time = cur_time
         self.done.value = True
 
     def generate_purchase(self):

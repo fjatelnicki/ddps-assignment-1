@@ -1,19 +1,28 @@
 import math
-from multiprocessing import Queue, Process
+import argparse
 from generator import Generator
 from sut_source import SUTSource
 
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--num-events', type=int)
+    parser.add_argument('--master', type=str)
+    parser.add_argument('--port', type=int)
+    parser.add_argument('--rate', type=int)
+
+    return parser.parse_args()
+
 class DataManager:
 
-    def __init__(self, num_events, generators_count, rate):
+    def __init__(self, master, port, num_events, generators_count, rate):
         self.generators_count = generators_count
         self.num_events = num_events
         self.generators = [Generator(1.0, math.ceil(rate / self.generators_count),
                                      math.ceil(num_events / self.generators_count))
                                      for i in range(generators_count)
             ]
-        self.sut_sources = [SUTSource('node102', 9999, self.generators[i]) for i in range(generators_count)]
+        self.sut_sources = [SUTSource(master, port, self.generators[i]) for i in range(generators_count)]
 
     def start(self):
         print('Starting DMS')
@@ -25,4 +34,6 @@ class DataManager:
 
 if __name__ == '__main__':
     print('DM')
-    DataManager(100_000_000, 1, 3000).start()
+    args = parse_args()
+
+    DataManager(master=args.master, port=args.port, num_events=args.num_events, generators_count=1, rate=args.rate).start()

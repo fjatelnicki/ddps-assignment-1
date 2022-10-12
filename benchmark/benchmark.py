@@ -2,7 +2,16 @@ import time
 from pyspark import SparkContext
 from pyspark.sql import SparkSession
 from pyspark.streaming import StreamingContext
-import json
+import argparse
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--master', type=str)
+    parser.add_argument('--port', type=int)
+
+    return parser.parse_args()
 
 def process_data(data):
     data = data.split('\t')
@@ -36,11 +45,11 @@ class Benchmark:
         self.results_path = results_path
 
     def run_benchmark(self):
-        spark_context = SparkContext(self.master)
-        # spark_context.setLogLevel('all')
+        spark_context = SparkContext(f'spark://{args.master}:7077')
+        spark_context.setLogLevel('off')
         streaming_context = StreamingContext(spark_context, self.batch_duration)
-
-        stream = streaming_context.socketTextStream('node102', self.port)
+        print(f'Listening {self.master}:{self.port}', flush=True)
+        stream = streaming_context.socketTextStream(self.master, self.port)
         stream = stream.map(process_data)
         stream = stream.reduceByKey(aggregate_tuples)
         stream = stream.map(data_to_csv)
@@ -51,4 +60,5 @@ class Benchmark:
 
 
 if __name__ == '__main__':
-    Benchmark('spark://node102:7077', 9999, 4, 'sum/results').run_benchmark()
+    args = parse_args()
+    Benchmark(args.master, args.port, 4, 'sum/results').run_benchmark()
