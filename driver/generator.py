@@ -19,22 +19,27 @@ class Generator(Process):
         print(f'Rate: {self.rate}, interval {self.interval}', flush=True)
         self.num_events = num_events
         self.done = Value(ctypes.c_bool, False)
-        self.queue = Queue(maxsize=10000)
+        self.queue = Queue(maxsize=100)
         self.purchase_probability = purchase_probability
 
     def run(self):
         last_time = time.time()
-        for _ in range(self.num_events):
+        for i in range(self.num_events):
             if random.random() < self.purchase_probability:
                 self.queue.put(self.generate_purchase())
             else:
                 self.queue.put(self.generate_ad())
 
-            cur_time = time.time()
-            # print(cur_time - last_time, self.interval, flush=True)
-            if cur_time - last_time < self.interval:
-                time.sleep(self.interval - (cur_time - last_time))
-            last_time = cur_time
+
+            #
+            if i % 3 == 0:
+                cur_time = time.time()
+                # print(cur_time - last_time, self.interval * 100, flush=True)
+
+                if cur_time - last_time < self.interval * 3:
+                    # print('sleeping', flush=True)
+                    time.sleep(self.interval * 3 - (cur_time - last_time))
+                last_time = cur_time
         self.done.value = True
 
     def generate_purchase(self):

@@ -14,7 +14,7 @@ class SUTSource(Process):
     def run(self):
         print('Starting SUT Source', flush=True)
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            print('Binding Socket', flush=True)
+            print(f'Binding Socket {self.host}, {self.port}', flush=True)
             sock.bind((self.host, self.port))
             print('Listening', flush=True)
             sock.listen(0)
@@ -22,13 +22,14 @@ class SUTSource(Process):
             conn, _ = sock.accept()
 
             start = time.time()
-            print('Connected!', self.generator.queue.qsize(), self.generator.done.value, flush=True)
+            print('Connected!', self.host, self.port, self.generator.queue.qsize(), self.generator.done.value, flush=True)
 
-            i = 0
+            i = 1
             print(self.generator.queue.qsize(), self.generator.done.value)
-            while not self.generator.done.value or self.generator.queue.qsize() > 0:
+            # while not self.generator.done.value or self.generator.queue.qsize() > 0:
+            while i < self.generator.num_events:
                 # print('getting data', flush=True)
-                p = time.time()
+                # p = time.time()
                 data = self.generator.queue.get()
                 # print(f'get time {time.time()-p}')
                 # print(data, flush=True)
@@ -36,7 +37,7 @@ class SUTSource(Process):
                 conn.sendall((data + '\n').encode())
 
                 if i % 100000 == 0:
-                    print(f'sent {i}, {self.generator.queue.qsize()}', flush=True)
+                    print(f'sent {i}, {self.generator.queue.qsize()}, Rate {i / (time.time() - start)}', flush=True)
                 i += 1
 
             total_time = time.time() - start

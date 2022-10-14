@@ -1,3 +1,4 @@
+
 import time
 from pyspark import SparkContext
 from pyspark.sql import SparkSession
@@ -10,6 +11,10 @@ def parse_args():
 
     parser.add_argument('--master', type=str)
     parser.add_argument('--port', type=int)
+    parser.add_argument('--num-gens', type=int)
+    parser.add_argument('--results-path', type=str)
+    parser.add_argument('--n-gens', type=int)
+    parser.add_argument('--generators-ips', nargs='+')
 
     return parser.parse_args()
 
@@ -33,27 +38,42 @@ def aggregate_tuples(d1, d2):
 def data_to_csv(data):
     cur_time = time.time()
     pack_id, (price, prev_time) = data
-
+    # print('Processing', flush=True)
     return f'{pack_id}\t{price}\t{prev_time}\t{cur_time}'
 
 
 class Benchmark:
-    def __init__(self, master, port, batch_duration, results_path):
+    def __init__(self, master, generators_ips, port, num_gens, batch_duration, results_path):
         self.master = master
-        self.port = port
+        self.generators_ips = generators_ips
+        self.ports = [port - i for i in range(num_gens)]
         self.batch_duration = batch_duration
         self.results_path = results_path
 
     def run_benchmark(self):
-        spark_context = SparkContext(f'spark://{args.master}:7077')
-        spark_context.setLogLevel('off')
+        spark_context = SparkContext(f'spark://{self.master}:7077')
+        # spark_context.setLogLevel('info')
         streaming_context = StreamingContext(spark_context, self.batch_duration)
-        print(f'Listening {self.master}:{self.port}', flush=True)
-        stream = streaming_context.socketTextStream(self.master, self.port)
-        stream = stream.map(process_data)
-        stream = stream.reduceByKey(aggregate_tuples)
-        stream = stream.map(data_to_csv)
+
+        streams = []
+        first = True
+        for generator_node in self.generators_ips:
+            for port in self.ports:
+                if first:
+                    stream = streaming_context.socketTextStream(generator_node, port)
+                else:
+                    stream = stream.union(streaming_context.socketTextStream(generator_node, port))
+                print(f'Listening {generator_node}:{self.ports}', flush=True)
+                stream = stream.map(process_data)
+                stream = stream.reduceByKey(aggregate_tuples)
+                stream = stream.map(data_to_csv)
         stream = stream.saveAsTextFiles(self.results_path)
+        # stream = streams[0]
+        # for other_stream in streams[0: ]:
+            # stream = stream.union(other_stream)
+
+            # stream.start()
+            # stream.awaitTermination()
 
         streaming_context.start()
         streaming_context.awaitTermination()
@@ -61,4 +81,4 @@ class Benchmark:
 
 if __name__ == '__main__':
     args = parse_args()
-    Benchmark(args.master, args.port, 4, 'sum/results').run_benchmark()
+    Benchmark(args.master, args.generators_ips, args.port, 8, 4, args.results_path).run_benchmark()

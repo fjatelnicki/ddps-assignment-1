@@ -19,10 +19,10 @@ class DataManager:
         self.generators_count = generators_count
         self.num_events = num_events
         self.generators = [Generator(1.0, math.ceil(rate / self.generators_count),
-                                     math.ceil(num_events / self.generators_count))
+                                     math.ceil(num_events))
                                      for i in range(generators_count)
             ]
-        self.sut_sources = [SUTSource(master, port, self.generators[i]) for i in range(generators_count)]
+        self.sut_sources = [SUTSource(master, port - i, self.generators[i]) for i in range(generators_count)]
 
     def start(self):
         print('Starting DMS')
@@ -36,4 +36,4 @@ if __name__ == '__main__':
     print('DM')
     args = parse_args()
 
-    DataManager(master=args.master, port=args.port, num_events=args.num_events, generators_count=1, rate=args.rate).start()
+    DataManager(master=args.master, port=args.port, num_events=args.num_events, generators_count=8, rate=args.rate).start()
