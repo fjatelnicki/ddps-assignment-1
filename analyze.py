@@ -25,7 +25,7 @@ def analye(in_files, out_file):
                 data.append(parts)
     df = pd.DataFrame(data, columns=['id', 'sum', 'start', 'end'])
     times = df['end'].astype(float) - df['start'].astype(float)
-    plt.scatter(range(len(times)), times)
+    plt.plot(range(len(times)), times)
     plt.savefig(out_file)
 
 if __name__ == '__main__':
@@ -33,7 +33,7 @@ if __name__ == '__main__':
     # analye('../sum_1_2/*', 'th2.png')
     # analye('../sum_1_3/*', 'th2.png')
     # analye('../sum_1_4/*', 'th2.png')
-    analye('../sum_2_6/*', 'th3.png')
+    analye('../test/*', 'th3.png')
 
 
 

@@ -23,7 +23,9 @@ class Generator(Process):
         self.purchase_probability = purchase_probability
 
     def run(self):
+        start_time = time.time()
         last_time = time.time()
+        sleep_interval = 3
         for i in range(self.num_events):
             if random.random() < self.purchase_probability:
                 self.queue.put(self.generate_purchase())
@@ -31,15 +33,20 @@ class Generator(Process):
                 self.queue.put(self.generate_ad())
 
 
-            #
-            if i % 3 == 0:
+            
+            if i % sleep_interval == 0:
                 cur_time = time.time()
                 # print(cur_time - last_time, self.interval * 100, flush=True)
 
-                if cur_time - last_time < self.interval * 3:
+                if cur_time - last_time < self.interval * sleep_interval:
                     # print('sleeping', flush=True)
-                    time.sleep(self.interval * 3 - (cur_time - last_time))
+                    time.sleep(self.interval * sleep_interval - (cur_time - last_time))
                 last_time = cur_time
+
+                if i % 30000:
+                    if cur_time - start_time > 5.5 * 60:
+                        break
+                
         self.done.value = True
 
     def generate_purchase(self):

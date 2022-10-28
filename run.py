@@ -26,7 +26,7 @@ if __name__ == '__main__':
 
     d = DeploySpark()
     num_generators_nodes = 32 // 8
-    nodes = d.reserve_nodes(args.num_nodes + num_generators_nodes + 1, 10)
+    nodes = d.reserve_nodes(args.num_nodes + num_generators_nodes + 1, '06')
     print(f'Reserved nodes {nodes}')
     master_node = node_nade_to_infiniband(nodes[0])
 
@@ -37,10 +37,14 @@ if __name__ == '__main__':
     d.connect_to_workers(worker_nodes)
     d.start_system(master_node, worker_nodes)
     print('Started system')
-
+    
+    i = 0
+    os.makedirs(args.results_path)
     for generator_node in generator_nodes:
+        
         os.system(f'ssh {generator_node} python ~/ddps-assignment-1/driver/data_manager.py --master {generator_node}' +
-                  f' --port 9999 --rate {args.rate // num_generators_nodes} --num-events {args.num_events} &')
+                  f' --port 9999 --rate {args.rate // num_generators_nodes} --num-events {args.num_events} --save-path {args.results_path}/th_node{i} &')
+        i += 1
 
     generators_ips = ' '.join(generator_nodes)
     os.system(f'ssh {nodes[0]} python ~/ddps-assignment-1/benchmark/benchmark.py --master {master_node} --n-gens 16' +

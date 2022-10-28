@@ -1,6 +1,8 @@
 
 import time
-from pyspark import SparkContext
+import os
+import shutil
+from pyspark import SparkContext, SparkConf
 from pyspark.sql import SparkSession
 from pyspark.streaming import StreamingContext
 import argparse
@@ -51,6 +53,11 @@ class Benchmark:
         self.results_path = results_path
 
     def run_benchmark(self):
+        # if os.path.exists('/local/ddps2201/spark'):
+        #     shutil.rmtree('/local/ddps2201/spark')
+        # os.makedirs('/local/ddps2201/spark')
+        # conf = conf=SparkConf()
+        # conf.set('spark.local.dir', '/local/ddps2201/spark')
         spark_context = SparkContext(f'spark://{self.master}:7077')
         # spark_context.setLogLevel('info')
         streaming_context = StreamingContext(spark_context, self.batch_duration)
@@ -65,7 +72,7 @@ class Benchmark:
                     stream = stream.union(streaming_context.socketTextStream(generator_node, port))
                 print(f'Listening {generator_node}:{self.ports}', flush=True)
                 stream = stream.map(process_data)
-                stream = stream.reduceByKey(aggregate_tuples)
+                stream = stream.reduceByKeyAndWindow(aggregate_tuples, invFunc=None, windowDuration=8 ,slideDuration=4)
                 stream = stream.map(data_to_csv)
         stream = stream.saveAsTextFiles(self.results_path)
         # stream = streams[0]
@@ -76,8 +83,13 @@ class Benchmark:
             # stream.awaitTermination()
 
         streaming_context.start()
-        streaming_context.awaitTermination()
 
+        start_time = time.time()
+
+        while time.time() - start_time < 5 * 60:
+            time.sleep(1)
+        # streaming_context.awaitTermination()
+        streaming_context.stop()
 
 if __name__ == '__main__':
     args = parse_args()

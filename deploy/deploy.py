@@ -40,7 +40,7 @@ class Deploy(ABC):
         for line in iter(stdout.readline, ""):
             print(line, end="")
         for i in range(len(self.workers_clients)):
-            stdin, stdout, stderr = self.workers_clients[i].exec_command(f'rm -rf /tmp', get_pty=True)
+            stdin, stdout, stderr = self.workers_clients[i].exec_command(f'rm -rf /tmp/spark*', get_pty=True)
             for line in iter(stdout.readline, ""):
                 print(line, end="")
             stdin, stdout, stderr = self.workers_clients[i].exec_command(f'{self.start_worker_path} spark://{master}:7077 -h {workers[i]}', get_pty=True)
