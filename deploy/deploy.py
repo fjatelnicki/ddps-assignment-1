@@ -35,6 +35,18 @@ class Deploy(ABC):
             client.connect(worker)
             self.workers_clients.append(client)
 
+    @abstractmethod
+    def start_system(self):
+        pass
+
+class DeploySpark(Deploy):
+    def __init__(self):
+        super().__init__()
+        self.start_master_path = '/var/scratch/ddps2201/spark-3.3.0-bin-hadoop3/sbin/start-master.sh'
+        self.start_worker_path = '/var/scratch/ddps2201/spark-3.3.0-bin-hadoop3/sbin/start-worker.sh'
+        self.stop_file_path = '/var/scratch/ddps2201/spark-3.3.0-bin-hadoop3/sbin/stop-all.sh'
+        self.workers_file_path = '/var/scratch/ddps2201/spark-3.3.0-bin-hadoop3/conf/workers'
+    
     def start_system(self, master, workers):
         stdin, stdout, stderr = self.master_client.exec_command(f'{self.start_master_path} -h {master}', get_pty=True)
         for line in iter(stdout.readline, ""):
@@ -46,16 +58,33 @@ class Deploy(ABC):
             stdin, stdout, stderr = self.workers_clients[i].exec_command(f'{self.start_worker_path} spark://{master}:7077 -h {workers[i]}', get_pty=True)
             for line in iter(stdout.readline, ""):
                 print(line, end="")
+    
 
-
-class DeploySpark(Deploy):
+class DeployFlink(Deploy):
     def __init__(self):
         super().__init__()
-        self.start_master_path = '/var/scratch/ddps2201/spark-3.3.0-bin-hadoop3/sbin/start-master.sh'
-        self.start_worker_path = '/var/scratch/ddps2201/spark-3.3.0-bin-hadoop3/sbin/start-worker.sh'
-        self.stop_file_path = '/var/scratch/ddps2201/spark-3.3.0-bin-hadoop3/sbin/stop-all.sh'
-        self.workers_file_path = '/var/scratch/ddps2201/spark-3.3.0-bin-hadoop3/conf/workers'
+        self.start_cluster_path = '/home/ddps2201/scratch/flink-master/build-target/bin/start-cluster.sh'
+        self.workers_file_path = '/home/ddps2201/scratch/flink-master/build-target/conf/workers'
+        self.masters_file_path = '/home/ddps2201/scratch/flink-master/build-target/conf/masters'
+        self.conf_file_path = '/home/ddps2201/scratch/flink-master/build-target/conf/flink-conf.yaml'
+        self.out_files_path = '/home/ddps2201/scratch/flink-master/build-target/log'
+    
+    def connect_to_workers(self, workers):
+        super().connect_to_workers(workers)
+        workers_file = ''
 
+        for worker in workers:
+            workers_file += worker + '\n'
+
+        with open(self.workers_file_path, 'w') as f:
+            f.write(workers_file)
+        
+    def start_system(self, master, workers):
+        os.system(f'ssh {master} /home/ddps2201/scratch/flink-master/build-target/bin/start-cluster.sh &')
+        time.sleep(15)
+    
+    def shutdown(self, master, workers):
+        os.system(f'ssh {master} /home/ddps2201/scratch/flink-master/build-target/bin/stop-cluster.sh &')
 
 if __name__ == '__main__':
     print("Testing Spark Deployment")
