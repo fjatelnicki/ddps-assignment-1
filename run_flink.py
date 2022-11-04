@@ -1,5 +1,6 @@
 from benchmark.benchmark import Benchmark
-from deploy.deploy import DeploySpark
+from deploy.deploy import DeployFlink
+import time
 import argparse
 import os
 
@@ -16,22 +17,22 @@ def parse_args():
 def node_nade_to_infiniband(node_name):
     return node_name
     base_ip = '10.149.1.'
-    return base_ip + int(node_name[5:])
+    return base_ip + str(int(node_name[5:]))
 
 
 if __name__ == '__main__':
-    print("Spark Deployment")
-
+    os.system('scancel -u ddps2201')
+    print("Flink Deployment")
     args = parse_args()
-
-    d = DeploySpark()
+    os.makedirs(args.results_path, exist_ok=True)
+    d = DeployFlink()
     num_generators_nodes = 32 // 8
     nodes = d.reserve_nodes(args.num_nodes + num_generators_nodes + 1, '06')
     print(f'Reserved nodes {nodes}')
-    master_node = node_nade_to_infiniband(nodes[0])
+    master_node = nodes[0]
 
-    generator_nodes = [node_nade_to_infiniband(node) for node in nodes[1: num_generators_nodes + 1]]
-    worker_nodes = [node_nade_to_infiniband(node) for node in nodes[num_generators_nodes + 1: ]]
+    generator_nodes = [node for node in nodes[1: num_generators_nodes + 1]]
+    worker_nodes = [node for node in nodes[num_generators_nodes + 1: ]]
     d.connect_to_master(master_node)
     print('Connected to master')
     d.connect_to_workers(worker_nodes)
@@ -39,7 +40,7 @@ if __name__ == '__main__':
     print('Started system')
     
     i = 0
-    os.makedirs(args.results_path)
+    # os.makedirs(args.results_path)
     for generator_node in generator_nodes:
         
         os.system(f'ssh {generator_node} python ~/ddps-assignment-1/driver/data_manager.py --master {generator_node}' +
@@ -47,7 +48,14 @@ if __name__ == '__main__':
         i += 1
 
     generators_ips = ' '.join(generator_nodes)
-    os.system(f'ssh {nodes[0]} python ~/ddps-assignment-1/benchmark/benchmark.py --master {master_node} --n-gens 16' +
-              f' --generators-ips {generators_ips} --port 9999 --results-path {args.results_path} &')
+    os.system(f'ssh {master_node} /home/ddps2201/scratch/flink-master/build-target/bin/flink' +
+              f' run -pyexec ~/scratch/flink/bin/python -py ~/ddps-assignment-1/flink/sum.py  --n-gens 8' +
+              f' --generators-ips {generators_ips} --port 9999 &') # -pyexec ~/scratch/flink
+    
+    time.sleep(5 * 60)
+
+    d.shutdown(master_node, worker_nodes)
+    os.system(f'cp ~/scratch/flink-master/build-target/log/*.out* {args.results_path}')
+    os.system(f'rm ~/scratch/flink-master/build-target/log/*')
     
     

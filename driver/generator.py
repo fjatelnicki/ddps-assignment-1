@@ -1,6 +1,6 @@
 import time
 import random
-from typing import List, Dict
+import numpy as np
 from multiprocessing import Process, Queue, Value, Manager
 import ctypes
 
@@ -8,8 +8,8 @@ import ctypes
 class Generator(Process):
     def __init__(self, purchase_probability, rate, num_events):
         super().__init__()
-        self.users = list(range(10))
-        self.prices = [1.0, 2.0, 3.0, 4.0, 5.0]
+        self.users = list(range(100))
+        self.prices = np.linspace(1, 20, 40)
         self.packs = {i: self.prices[i] for i in range(len(self.prices))}
         self.pack_ids = [pack_id for pack_id in self.packs.keys()]
         self.rate = rate
@@ -27,13 +27,8 @@ class Generator(Process):
         last_time = time.time()
         sleep_interval = 3
         for i in range(self.num_events):
-            if random.random() < self.purchase_probability:
-                self.queue.put(self.generate_purchase())
-            else:
-                self.queue.put(self.generate_ad())
+            self.queue.put(self.generate_purchase())
 
-
-            
             if i % sleep_interval == 0:
                 cur_time = time.time()
                 # print(cur_time - last_time, self.interval * 100, flush=True)
@@ -53,5 +48,3 @@ class Generator(Process):
         pack_id = int(random.choice(self.pack_ids))
         return f'{int(random.choice(self.users))}\t{pack_id}\t{self.packs[pack_id]}\t{float(time.time())}'
 
-    def generate_ad(self):
-        return f'{int(random.choice(self.users))}\t{int(random.choice(self.pack_ids))}\t{float(time.time())}'

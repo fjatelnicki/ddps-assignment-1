@@ -43,7 +43,7 @@ class SUTSource(Process):
                 conn.sendall((data + '\n').encode())
 
                 if i % 10000 == 0:
-                    # print(f'sent {i}, {self.generator.queue.qsize()}, Rate {i / (time.time() - start)}', flush=True)
+                    print(f'sent {i}, {self.generator.queue.qsize()}, Rate {i / (time.time() - start)}', flush=True)
                     times.append(time.time())
                     if time.time() - start > 5 * 60:
                         break
